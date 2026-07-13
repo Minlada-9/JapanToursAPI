@@ -1,0 +1,142 @@
+{
+  "info": {
+    "name": "Japan Tours API",
+    "description": "Collection for testing the Japan Tours Express + MongoDB API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "tourId", "value": "" },
+    { "key": "bookingId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/"
+      }
+    },
+    {
+      "name": "Tours",
+      "item": [
+        {
+          "name": "Get All Tours",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tours"
+          }
+        },
+        {
+          "name": "Create Tour",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('tourId', json._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"ทัวร์ฮอกไกโด\",\n  \"description\": \"ชมหิมะฤดูหนาว\",\n  \"price\": 20000,\n  \"seats\": 15,\n  \"date\": \"2026-12-20\",\n  \"image\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/tours"
+          }
+        },
+        {
+          "name": "Get Tour By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tours/{{tourId}}"
+          }
+        },
+        {
+          "name": "Update Tour",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 18500,\n  \"seats\": 12\n}"
+            },
+            "url": "{{baseUrl}}/api/tours/{{tourId}}"
+          }
+        },
+        {
+          "name": "Delete Tour",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/tours/{{tourId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('bookingId', json._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tour\": \"{{tourId}}\",\n  \"name\": \"สมชาย ใจดี\",\n  \"email\": \"somchai@example.com\",\n  \"phone\": \"0812345678\",\n  \"qty\": 2,\n  \"note\": \"ทดสอบจอง\"\n}"
+            },
+            "url": "{{baseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Update Booking",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qty\": 3,\n  \"note\": \"แก้ไขจำนวนคน\"\n}"
+            },
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}"
+          }
+        },
+        {
+          "name": "Delete Booking",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
