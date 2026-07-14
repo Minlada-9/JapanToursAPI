@@ -578,7 +578,7 @@
 
   // Fallback images (used when the API doesn't return t.image), matched by destination keyword
   const FALLBACK_IMAGES = [
-    { match: /ฮอกไกโด|hokkaido/i, url: "https://images.unsplash.com/photo-1601823984263-b87b59798b70?auto=format&fit=crop&w=800&q=80" },
+    { match: /ฮอกไกโด|hokkaido/i, url: "https://images.unsplash.com/photo-1576829021150-ebc8b46b9fb9?auto=format&fit=crop&w=800&q=80" },
     { match: /เกียวโต|kyoto/i,   url: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80" },
     { match: /โตเกียว|tokyo/i,   url: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=800&q=80" },
     { match: /โอซาก้า|osaka/i,   url: "https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=800&q=80" }
@@ -591,95 +591,125 @@
     return found ? found.url : DEFAULT_FALLBACK_IMAGE;
   }
 
-  async function loadTours(){
-    try {
-      const res = await fetch(`${API}/api/tours`);
-      if(!res.ok) throw new Error("bad response");
-      const tours = await res.json();
-      toursCache = tours;
+  // Static tour data — no API call needed, just pick from the list below.
+  const STATIC_TOURS = [
+    {
+      _id: "hokkaido-1",
+      title: "ทัวร์ฮอกไกโด",
+      description: "ชมหิมะฤดูหนาว",
+      price: 20000,
+      seats: 11,
+      image: "https://images.unsplash.com/photo-1576829021150-ebc8b46b9fb9?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      _id: "hokkaido-2",
+      title: "ทัวร์ฮอกไกโด",
+      description: "ชมหิมะฤดูหนาว",
+      price: 20000,
+      seats: 10,
+      image: "https://images.unsplash.com/photo-1576829021150-ebc8b46b9fb9?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      _id: "kyoto-1",
+      title: "ทัวร์เกียวโต",
+      description: "ชมวัดดัง",
+      price: 15000,
+      seats: 3,
+      image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      _id: "tokyo-1",
+      title: "ทัวร์โตเกียว",
+      description: "เที่ยวโตเกียว 3 วัน",
+      price: 12000,
+      seats: 10,
+      image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=800&q=80"
+    }
+  ];
 
-      if(!tours.length){
-        tourListEl.innerHTML = `<div class="empty-note">ยังไม่มีทัวร์ในระบบขณะนี้</div>`;
-        tourSelect.innerHTML = `<option value="">-- ยังไม่มีทัวร์ --</option>`;
-        tourSelect.disabled = true;
-        return;
-      }
+  function loadTours(){
+    const tours = STATIC_TOURS;
+    toursCache = tours;
 
-      tourSelect.disabled = false;
-      tourSelect.innerHTML = '<option value="">-- กรุณาเลือกทัวร์ --</option>' +
-        tours.map(t => `<option value="${t._id}">${t.title} — ${money(t.price)} บาท</option>`).join("");
+    tourSelect.disabled = false;
+    tourSelect.innerHTML = '<option value="">-- กรุณาเลือกทัวร์ --</option>' +
+      tours.map(t => `<option value="${t._id}">${t.title} — ${money(t.price)} บาท</option>`).join("");
 
-      tourListEl.innerHTML = tours.map(t => `
-        <div class="tour-card">
-          <div class="tour-media">
-            <img src="${getTourImage(t)}" alt="${t.title}" loading="lazy">
-            ${t.seats != null ? `<span class="tour-badge">เหลือ ${t.seats} ที่นั่ง</span>` : ""}
-          </div>
-          <div class="tour-body">
-            <h4>${t.title}</h4>
-            <p>${t.description || "ทริปพิเศษที่ออกแบบมาให้คุณได้สัมผัสญี่ปุ่นแบบใกล้ชิด"}</p>
-            <div class="tour-price">
-              <span class="amt">${money(t.price)} <small>บาท / ท่าน</small></span>
-              <button type="button" class="tour-select-btn" data-id="${t._id}">เลือกทัวร์นี้ →</button>
-            </div>
+    tourListEl.innerHTML = tours.map(t => `
+      <div class="tour-card">
+        <div class="tour-media">
+          <img src="${getTourImage(t)}" alt="${t.title}" loading="lazy">
+          ${t.seats != null ? `<span class="tour-badge">เหลือ ${t.seats} ที่นั่ง</span>` : ""}
+        </div>
+        <div class="tour-body">
+          <h4>${t.title}</h4>
+          <p>${t.description || "ทริปพิเศษที่ออกแบบมาให้คุณได้สัมผัสญี่ปุ่นแบบใกล้ชิด"}</p>
+          <div class="tour-price">
+            <span class="amt">${money(t.price)} <small>บาท / ท่าน</small></span>
+            <button type="button" class="tour-select-btn" data-id="${t._id}">เลือกทัวร์นี้ →</button>
           </div>
         </div>
-      `).join("");
+      </div>
+    `).join("");
 
-      tourListEl.querySelectorAll(".tour-select-btn").forEach(btn=>{
-        btn.addEventListener("click", () => {
-          tourSelect.value = btn.dataset.id;
-          tourSelect.dispatchEvent(new Event("change", { bubbles: true }));
-          tourSelect.focus();
-          const bookingSection = document.getElementById("booking");
-          if (bookingSection) bookingSection.scrollIntoView({behavior:"smooth", block:"start"});
-        });
+    tourListEl.querySelectorAll(".tour-select-btn").forEach(btn=>{
+      btn.addEventListener("click", () => {
+        tourSelect.value = btn.dataset.id;
+        tourSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        tourSelect.focus();
+        const bookingSection = document.getElementById("booking");
+        if (bookingSection) bookingSection.scrollIntoView({behavior:"smooth", block:"start"});
       });
+    });
+  }
 
-    } catch (err) {
-      tourListEl.innerHTML = `<div class="empty-note">ไม่สามารถโหลดรายการทัวร์ได้ในขณะนี้ กรุณาลองใหม่ภายหลัง</div>`;
-      tourSelect.innerHTML = `<option value="">-- ไม่สามารถโหลดทัวร์ได้ --</option>`;
-      tourSelect.disabled = true;
+  // Bookings are stored locally in the browser (localStorage) since the tour
+  // list is now static and there's no backend behind /api/bookings.
+  const BOOKINGS_KEY = "japan_tours_bookings";
+
+  function getStoredBookings(){
+    try {
+      return JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
+    } catch(err) {
+      return [];
     }
   }
 
-  async function loadBookings(){
-    try {
-      const res = await fetch(`${API}/api/bookings`);
-      if(!res.ok) throw new Error("bad response");
-      const bookings = await res.json();
+  function saveStoredBookings(bookings){
+    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(bookings));
+  }
 
-      if(!bookings.length){
-        bookingListEl.innerHTML = `<div class="empty-note">ยังไม่มีการจอง</div>`;
-        return;
-      }
+  function loadBookings(){
+    const bookings = getStoredBookings();
 
-      bookingListEl.innerHTML = bookings.map(b => `
-        <div class="ticket">
-          <div class="perf"></div>
-          <div class="ticket-main">
-            <div class="route">${b.tour ? b.tour.title : "ทัวร์ (ไม่ระบุ)"}</div>
-            <div class="meta">
-              <span><b>${b.name}</b></span>
-              <span>โทร ${b.phone}</span>
-              <span>${b.email}</span>
-              <span>${b.qty} คน</span>
-              <span>วันที่ ${b.dateBooked ? b.dateBooked.split("T")[0] : "-"}</span>
-              ${b.note ? `<span>หมายเหตุ: ${b.note}</span>` : ""}
-            </div>
-          </div>
-          <div class="ticket-stub">
-            <div class="stamp">CONFIRM</div>
-            <small>Booking</small>
+    if(!bookings.length){
+      bookingListEl.innerHTML = `<div class="empty-note">ยังไม่มีการจอง</div>`;
+      return;
+    }
+
+    bookingListEl.innerHTML = bookings.map(b => `
+      <div class="ticket">
+        <div class="perf"></div>
+        <div class="ticket-main">
+          <div class="route">${b.tourTitle || "ทัวร์ (ไม่ระบุ)"}</div>
+          <div class="meta">
+            <span><b>${b.name}</b></span>
+            <span>โทร ${b.phone}</span>
+            <span>${b.email}</span>
+            <span>${b.qty} คน</span>
+            <span>วันที่ ${b.dateBooked || "-"}</span>
+            ${b.note ? `<span>หมายเหตุ: ${b.note}</span>` : ""}
           </div>
         </div>
-      `).join("");
-    } catch(err) {
-      bookingListEl.innerHTML = `<div class="empty-note">ไม่สามารถโหลดรายการจองได้ในขณะนี้</div>`;
-    }
+        <div class="ticket-stub">
+          <div class="stamp">CONFIRM</div>
+          <small>Booking</small>
+        </div>
+      </div>
+    `).join("");
   }
 
-  form.addEventListener("submit", async e => {
+  form.addEventListener("submit", e => {
     e.preventDefault();
     formMsg.textContent = "";
     formMsg.className = "form-msg";
@@ -690,26 +720,27 @@
       return;
     }
 
+    const selectedTour = toursCache.find(t => t._id === tourSelect.value);
+
     const data = {
       tour: tourSelect.value,
+      tourTitle: selectedTour ? selectedTour.title : "",
       name: document.getElementById("name").value,
       email: document.getElementById("email").value,
       phone: document.getElementById("phone").value,
       qty: Number(document.getElementById("people").value),
       dateBooked: document.getElementById("date").value,
-      note: document.getElementById("note").value
+      note: document.getElementById("note").value,
+      createdAt: new Date().toISOString()
     };
 
     submitBtn.disabled = true;
     submitBtn.textContent = "กำลังส่ง...";
 
     try {
-      const res = await fetch(`${API}/api/bookings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if(!res.ok) throw new Error("bad response");
+      const bookings = getStoredBookings();
+      bookings.unshift(data);
+      saveStoredBookings(bookings);
 
       form.reset();
       formMsg.textContent = "จองสำเร็จแล้ว ✓";
