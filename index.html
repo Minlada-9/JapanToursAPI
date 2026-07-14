@@ -627,9 +627,24 @@
     }
   ];
 
-  function loadTours(){
-    const tours = STATIC_TOURS;
+  async function loadTours(){
+    let tours = [];
+    try {
+      const res = await fetch(API + "/api/tours");
+      tours = await res.json();
+    } catch (err) {
+      console.log("ไม่สามารถโหลดทัวร์จาก API ได้:", err);
+      tourListEl.innerHTML = `<div class="empty-note">ไม่สามารถโหลดข้อมูลทัวร์ได้ กรุณาลองใหม่อีกครั้ง</div>`;
+      return;
+    }
+
     toursCache = tours;
+
+    if (!tours.length) {
+      tourListEl.innerHTML = `<div class="empty-note">ยังไม่มีทัวร์ในระบบ</div>`;
+      tourSelect.innerHTML = '<option value="">-- กรุณาเลือกทัวร์ --</option>';
+      return;
+    }
 
     tourSelect.disabled = false;
     tourSelect.innerHTML = '<option value="">-- กรุณาเลือกทัวร์ --</option>' +
@@ -663,24 +678,16 @@
     });
   }
 
-  // Bookings are stored locally in the browser (localStorage) since the tour
-  // list is now static and there's no backend behind /api/bookings.
-  const BOOKINGS_KEY = "japan_tours_bookings";
-
-  function getStoredBookings(){
+  async function loadBookings(){
+    let bookings = [];
     try {
-      return JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
-    } catch(err) {
-      return [];
+      const res = await fetch(API + "/api/bookings");
+      bookings = await res.json();
+    } catch (err) {
+      console.log("ไม่สามารถโหลดรายการจองได้:", err);
+      bookingListEl.innerHTML = `<div class="empty-note">ไม่สามารถโหลดรายการจองได้</div>`;
+      return;
     }
-  }
-
-  function saveStoredBookings(bookings){
-    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(bookings));
-  }
-
-  function loadBookings(){
-    const bookings = getStoredBookings();
 
     if(!bookings.length){
       bookingListEl.innerHTML = `<div class="empty-note">ยังไม่มีการจอง</div>`;
@@ -691,13 +698,13 @@
       <div class="ticket">
         <div class="perf"></div>
         <div class="ticket-main">
-          <div class="route">${b.tourTitle || "ทัวร์ (ไม่ระบุ)"}</div>
+          <div class="route">${(b.tour && b.tour.title) || "ทัวร์ (ไม่ระบุ)"}</div>
           <div class="meta">
             <span><b>${b.name}</b></span>
             <span>โทร ${b.phone}</span>
             <span>${b.email}</span>
             <span>${b.qty} คน</span>
-            <span>วันที่ ${b.dateBooked || "-"}</span>
+            <span>วันที่ ${b.dateBooked ? b.dateBooked.split("T")[0] : "-"}</span>
             ${b.note ? `<span>หมายเหตุ: ${b.note}</span>` : ""}
           </div>
         </div>
@@ -709,7 +716,7 @@
     `).join("");
   }
 
-  form.addEventListener("submit", e => {
+  form.addEventListener("submit", async e => {
     e.preventDefault();
     formMsg.textContent = "";
     formMsg.className = "form-msg";
@@ -720,31 +727,35 @@
       return;
     }
 
-    const selectedTour = toursCache.find(t => t._id === tourSelect.value);
-
     const data = {
       tour: tourSelect.value,
-      tourTitle: selectedTour ? selectedTour.title : "",
       name: document.getElementById("name").value,
       email: document.getElementById("email").value,
       phone: document.getElementById("phone").value,
       qty: Number(document.getElementById("people").value),
       dateBooked: document.getElementById("date").value,
-      note: document.getElementById("note").value,
-      createdAt: new Date().toISOString()
+      note: document.getElementById("note").value
     };
 
     submitBtn.disabled = true;
     submitBtn.textContent = "กำลังส่ง...";
 
     try {
-      const bookings = getStoredBookings();
-      bookings.unshift(data);
-      saveStoredBookings(bookings);
+      const res = await fetch(API + "/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || "Booking failed");
+      }
 
       form.reset();
       formMsg.textContent = "จองสำเร็จแล้ว ✓";
       formMsg.classList.add("ok");
+      loadTours();
       loadBookings();
     } catch(err) {
       formMsg.textContent = "ส่งการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
